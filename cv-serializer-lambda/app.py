@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from typing import List, Optional
-
 from langchain_community.chat_models import BedrockChat
 from langchain_core.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
@@ -16,8 +15,6 @@ app = FastAPI()
 bedrock_runtime = boto3.client(
     service_name="bedrock-runtime",
     region_name="us-east-1",
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY")
 )
 
 # LLM model
@@ -37,22 +34,29 @@ class WorkExperience(BaseModel):
 
 class CVSchema(BaseModel):
     name: str
-    countryOfBirth: str
+    countryOfBirth: Optional[str] = None
     studies: str
     workExperience: List[WorkExperience]
 
 parser = PydanticOutputParser(pydantic_object=CVSchema)
 
 prompt_template = PromptTemplate.from_template("""
-Extraé los siguientes datos de este currículum y devolvé un JSON válido exactamente con este formato:
+Extraé los siguientes datos del currículum. Devolvé un **JSON estrictamente válido** con la siguiente estructura exacta:
 
 {format_instructions}
+
+✅ Reglas importantes:
+- **No devuelvas ningún texto ni comentario adicional**, solo el JSON plano.
+- **Incluí todos los campos**, aunque estén vacíos. Usá `null` o `""` cuando falte información.
+- Las fechas deben tener formato: `"Mes Año"`, por ejemplo `"Marzo 2022"` o `null`.
+- El campo `countryOfBirth` no debe omitirse, aunque no esté presente: usá `null`.
 
 Texto del CV:
 \"\"\"
 {text}
 \"\"\"
 """)
+
 
 # Request input schema
 class CVRequest(BaseModel):
