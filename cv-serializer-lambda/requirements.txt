@@ -6,3 +6,6 @@ langchain-community
 langchain-core
 pydantic
 python-dotenv
+PyPDF2
+logging
+time
